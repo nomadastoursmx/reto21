@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Nutri Less — Control Reto 21 Días</title>
+  <meta name="description" content="Panel para gestionar participantes y progreso del Reto 21 Días de Nutri Less. Importa/Exporta CSV, comparte por WhatsApp y guarda automáticamente." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect rx='20' width='100' height='100' fill='%235F2EEA'/%3E%3Ctext x='50' y='60' text-anchor='middle' font-size='54' fill='white' font-family='sans-serif'%3ENL%3C/text%3E%3C/svg%3E" />
+  <style>
+    :root{
+      --brand:#6A00FF;           /* morado principal */
+      --brand-600:#5B00D9;
+      --brand-700:#4A00B2;
+      --brand-100:#EEE8FF;
+      --ink:#1f2937;             /* gris oscuro */
+      --muted:#6b7280;           /* gris medio */
+      --bg:#fafafa;              /* fondo base */
+      --card:#ffffff;            /* tarjetas */
+      --ok:#10b981;              /* verde */
+      --warn:#f59e0b;            /* ámbar */
+      --bad:#ef4444;             /* rojo */
+      --radius:16px;             /* esquinas redondeadas */
+      --shadow:0 8px 24px rgba(17,24,39,.08), 0 2px 8px rgba(17,24,39,.04);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      color:var(--ink); background:linear-gradient(180deg,#f7f5ff, #fff 280px);
+    }
+    .shell{max-width:1100px; margin:0 auto; padding:16px 16px 80px}
+
+    /* Header */
+    header{
+      position:sticky; top:0; z-index:50;
+      backdrop-filter:saturate(1.1) blur(6px);
+      background:linear-gradient(180deg, rgba(255,255,255,.9), rgba(255,255,255,.7));
+      border-bottom:1px solid #eee; 
+    }
+    .header-inner{display:flex; gap:12px; align-items:center; padding:10px 16px}
+    .logo{display:flex; align-items:center; gap:12px}
+    .logo-badge{width:40px; height:40px; border-radius:12px; display:grid; place-items:center; color:#fff; font-weight:800; letter-spacing:.5px; background:linear-gradient(135deg,var(--brand),var(--brand-700)); box-shadow:var(--shadow)}
+    .logo h1{font-size:18px; margin:0}
+    .logo small{display:block; color:var(--muted); font-weight:500}
+    .grow{flex:1}
+
+    /* Buttons */
+    .btn{appearance:none; border:none; background:var(--brand); color:#fff; padding:10px 14px; border-radius:12px; cursor:pointer; font-weight:700; letter-spacing:.3px; box-shadow:0 6px 16px rgba(90,0,255,.25); display:inline-flex; align-items:center; gap:8px}
+    .btn.secondary{background:#fff; color:var(--brand); border:1px solid var(--brand-100); box-shadow:none}
+    .btn.ghost{background:transparent; color:var(--brand); border:1px dashed var(--brand-100)}
+    .btn.danger{background:var(--bad)}
+    .btn:active{transform:translateY(1px)}
+    .btn svg{width:18px; height:18px}
+
+    /* Top actions bar */
+    .actions{display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin:12px 0 16px}
+    .actions .file{position:relative; overflow:hidden}
+    .actions input[type=file]{position:absolute; inset:0; opacity:0; cursor:pointer}
+
+    /* Search & Filters */
+    .filters{display:grid; grid-template-columns: 1fr 200px 160px; gap:10px; align-items:center; margin:0 0 14px}
+    .input, select{width:100%; padding:10px 12px; border-radius:12px; border:1px solid #e5e7eb; background:#fff}
+    .hint{font-size:12px; color:var(--muted); margin-top:-4px;}
+
+    /* Summary cards */
+    .summary{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:14px 0}
+    .card{background:var(--card); border-radius:var(--radius); padding:14px; box-shadow:var(--shadow)}
+    .kpi{display:flex; justify-content:space-between; align-items:flex-start}
+    .kpi b{font-size:24px}
+    .sub{color:var(--muted); font-size:12px; margin-top:6px}
+
+    /* Table */
+    .table-wrap{overflow:auto; border-radius:12px; border:1px solid #eee}
+    table{width:100%; border-collapse:separate; border-spacing:0; min-width:980px; background:#fff}
+    thead th{position:sticky; top:0; background:linear-gradient(180deg,#f5f2ff,#fff); text-align:left; font-size:12px; color:#6b6b88; padding:10px; border-bottom:1px solid #eee}
+    tbody td{padding:8px 10px; border-bottom:1px solid #f3f4f6; font-size:14px}
+    tbody tr:hover{background:#fafaff}
+    .badge{font-size:12px; padding:4px 8px; border-radius:999px; font-weight:700; display:inline-block}
+    .success{background:#ecfdf5; color:#047857}
+    .warning{background:#fff7ed; color:#b45309}
+    .danger{background:#fef2f2; color:#b91c1c}
+
+    .row-actions{display:flex; gap:6px}
+
+    /* Footer bar for mobile */
+    .fab{
+      position:fixed; right:16px; bottom:16px; z-index:40;
+      background:linear-gradient(135deg,var(--brand),var(--brand-700)); color:#fff; width:56px; height:56px; border-radius:16px; display:grid; place-items:center; box-shadow:0 12px 24px rgba(90,0,255,.35);
+    }
+
+    /* Dialog */
+    dialog{border:none; border-radius:16px; width:min(720px,92vw); padding:0; box-shadow:var(--shadow)}
+    .modal{padding:16px}
+    .modal h3{margin:0 0 10px}
+    .grid{display:grid; gap:10px}
+    .grid.cols-2{grid-template-columns:1fr 1fr}
+    .grid.cols-3{grid-template-columns:repeat(3,1fr)}
+    .modal .actions{justify-content:flex-end}
+    .close-x{position:absolute; right:12px; top:10px; color:#777; background:#fff; border:1px solid #eee; border-radius:10px; width:32px; height:32px; display:grid; place-items:center}
+
+    /* Save indicator */
+    .save-indicator{display:flex; align-items:center; gap:8px; color:var(--muted); font-size:12px}
+    .dot{width:10px; height:10px; border-radius:999px; background:#bbb}
+    .dot.ok{background:var(--ok)}
+    .dot.warn{background:var(--warn)}
+
+    /* Responsive */
+    @media (max-width:900px){
+      .filters{grid-template-columns:1fr 1fr;}
+      .summary{grid-template-columns:1fr 1fr}
+    }
+    @media (max-width:640px){
+      .header-inner{flex-wrap:wrap}
+      .actions{gap:8px}
+      .filters{grid-template-columns:1fr}
+      .summary{grid-template-columns:1fr 1fr}
+      .btn{padding:10px 12px}
+    }
+  
+    /* Mes del reto (mínimo impacto) */
+    .monthbar{display:flex;gap:10px;align-items:center;margin:10px 0 6px}
+    .monthbar label{font-size:12px;opacity:.9}
+</style>
+</head>
+<body>
+  <header>
+    <div class="header-inner shell" style="padding-left:16px;padding-right:16px">
+      <div class="logo">
+        <div class="logo-badge" aria-label="Nutri Less">NL</div>
+        <div>
+          <h1>Nutri Less <small>• Reto 21 Días</small></h1>
+          <div class="save-indicator" id="saveState"><span class="dot" id="saveDot"></span><span id="saveText">Listo</span></div>
+        </div>
+      </div>
+      <div class="grow"></div>
+      <button class="btn" id="btnAdd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg> Añadir participante</button>
+    </div>
+  </header>
+
+  <main class="shell">
+    <!-- Mes del reto (mínima modificación) -->
+    <div class="monthbar">
+      <label>Mes del reto
+        <input class="input" id="retoMes" placeholder="Ej. Septiembre 2025">
+      </label>
+    </div>
+
+    <!-- Acciones principales -->
+    <div class="actions">
+      <label class="btn secondary file" title="Importar archivo CSV">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Importar CSV
+        <input type="file" id="csvInput" accept=".csv" />
+      </label>
+      <button class="btn secondary" id="btnExport"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Exportar CSV</button>
+      <button class="btn secondary" id="btnTemplate" title="Descargar plantilla CSV">Plantilla CSV</button>
+      <button class="btn" id="btnShareAll"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z"/><path d="M14.31 8l5.74 3.31-5.74 3.31"/><path d="M9.69 8L3.95 11.31 9.69 14.62"/></svg> Compartir resumen</button>
+      <button class="btn ghost" id="btnClear" title="Borrar todos los datos (local)">Borrar datos</button>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filters">
+      <input class="input" id="search" placeholder="Buscar por nombre o teléfono…" />
+      <select id="statusFilter">
+        <option value="">Estado: Todos</option>
+        <option>Activa</option>
+        <option>Completó</option>
+        <option>Abandonó</option>
+      </select>
+      <select id="dayFilter">
+        <option value="">Día: Todos</option>
+        <option value="1-7">1 - 7</option>
+        <option value="8-14">8 - 14</option>
+        <option value="15-21">15 - 21</option>
+        <option value="hoy">Hoy</option>
+      </select>
+    </div>
+    <div class="hint">Consejo: toca el nombre para editar. Usa el botón ⚙️ para registrar peso y asistencia diaria.</div>
+
+    <!-- Resumen -->
+    <section class="summary">
+      <div class="card kpi">
+        <div>
+          <div class="sub">Participantes</div>
+          <b id="kpiTotal">0</b>
+        </div>
+        <div class="sub" id="kpiFecha"></div>
+      </div>
+      <div class="card kpi">
+        <div>
+          <div class="sub">Activas</div>
+          <b id="kpiActivas">0</b>
+        </div>
+        <span class="badge success">en curso</span>
+      </div>
+      <div class="card kpi">
+        <div>
+          <div class="sub">Completaron</div>
+          <b id="kpiDone">0</b>
+        </div>
+        <span class="badge warning">finalizadas</span>
+      </div>
+      <div class="card kpi">
+        <div>
+          <div class="sub">Promedio de avance</div>
+          <b id="kpiAvg">0%</b>
+        </div>
+        <span class="badge">21 días</span>
+      </div>
+    </section>
+
+    <!-- Tabla -->
+    <div class="table-wrap">
+      <table id="table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Nombre</th>
+            <th>Teléfono</th>
+            <th>Inicio</th>
+            <th>Día</th>
+            <th>Peso inicial</th>
+            <th>Peso actual</th>
+            <th>Cambio</th>
+            <th>Estado</th>
+            <th>Notas</th>
+            <th>Progreso</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- Botón flotante para móviles -->
+  <a class="fab" id="fabAdd" title="Añadir"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></a>
+
+  <!-- Modal: Crear/Editar participante -->
+  <dialog id="dlgForm">
+    <form method="dialog">
+      <div class="modal">
+        <button class="close-x" value="cancel" aria-label="Cerrar">✕</button>
+        <h3 id="formTitle">Añadir participante</h3>
+        <div class="grid cols-2">
+          <label>Nombre
+            <input class="input" id="f_name" required />
+          </label>
+          <label>Teléfono (10 dígitos MX)
+            <input class="input" id="f_phone" inputmode="numeric" pattern="[0-9]{10}" placeholder="Ej. 9611234567" />
+          </label>
+          <label>Fecha de inicio
+            <input class="input" id="f_start" type="date" />
+          </label>
+          <label>Día actual (1-21)
+            <input class="input" id="f_day" type="number" min="1" max="21" value="1" />
+          </label>
+          <label>Peso inicial (kg)
+            <input class="input" id="f_w0" type="number" step="0.1" />
+          </label>
+          <label>Peso actual (kg)
+            <input class="input" id="f_w" type="number" step="0.1" />
+          </label>
+        </div>
+        <label>Notas
+          <textarea class="input" id="f_notes" rows="3" placeholder="Objetivos, restricciones, observaciones…"></textarea>
+        </label>
+        <div class="actions">
+          <button class="btn secondary" value="cancel">Cancelar</button>
+          <button class="btn" id="btnSave">Guardar</button>
+        </div>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Modal: Progreso / Asistencia -->
+  <dialog id="dlgProgress">
+    <form method="dialog">
+      <div class="modal">
+        <button class="close-x" value="cancel" aria-label="Cerrar">✕</button>
+        <h3>Progreso y asistencia</h3>
+        <div id="progMeta" class="sub" style="margin-bottom:8px"></div>
+        <div class="grid cols-3" id="daysGrid"></div>
+        <div class="grid cols-3" style="margin-top:10px">
+          <label>Peso de hoy (kg)
+            <input class="input" id="p_weight" type="number" step="0.1" />
+          </label>
+          <label>Día a registrar
+            <input class="input" id="p_day" type="number" min="1" max="21" />
+          </label>
+          <label>Nota (opcional)
+            <input class="input" id="p_note" />
+          </label>
+        </div>
+        <div class="actions">
+          <button class="btn secondary" value="cancel">Cerrar</button>
+          <button class="btn" id="btnProgSave">Guardar registro</button>
+        </div>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
+  // ==========================
+  // Nutri Less — Reto 21 Días
+  // Panel 100% local (sin servidor). Guarda en localStorage.
+  // ==========================
+
+  /*\
+    📦 Estructura de datos (localStorage: NL_RETO21_V1)
+    participant = {
+      id: string,
+      name: string,
+      phone: string,          // 10 dígitos MX
+      startDate: 'YYYY-MM-DD',
+      day: 1..21,
+      weightStart: number|null,
+      weightCurrent: number|null,
+      status: 'Activa'|'Completó'|'Abandonó',
+      notes: string,
+      progress: [ {day:number, weight:number|null, date:string, note?:string} ],
+      attendance: boolean[21],
+      lastUpdate: ISOString
+    }
+  */
+
+  const STORE_KEY = 'NL_RETO21_V1';
+  let data = { participants: [] };
+  let editingId = null;         // id en edición
+  let progId = null;            // id en progreso
+  let saveTimer = null;
+
+  // Helpers -----------------
+  const $ = sel => document.querySelector(sel);
+  const el = (tag, attrs={})=>{ const n = document.createElement(tag); for(const k in attrs){ if(k==='text') n.textContent=attrs[k]; else if(k==='html') n.innerHTML=attrs[k]; else n.setAttribute(k, attrs[k]); } return n; }
+  const todayISO = ()=> new Date().toISOString().slice(0,10);
+  const uuid = ()=> 'p_' + Math.random().toString(36).slice(2,9);
+  const clamp = (v,min,max)=> Math.min(max, Math.max(min, v));
+
+  function formatPct(a,b){
+    if(a==null || b==null || !isFinite(a) || !isFinite(b)) return '—';
+    const diff = a-b; const pct = (diff/a)*100; return (pct>=0?'-':'+') + Math.abs(pct).toFixed(1) + '%';
+  }
+  function phoneMX(num){
+    const digits = (num||'').replace(/\D/g,'');
+    if(digits.length===10) return '52'+digits; // MX país 52
+    if(digits.length===12 && digits.startsWith('52')) return digits;
+    return null; // no estándar
+  }
+  function encodeWA(text){ return encodeURIComponent(text); }
+
+  function markSaving(state){
+    const dot = $('#saveDot'); const t = $('#saveText');
+    if(state==='saving'){ dot.className='dot warn'; t.textContent='Guardando…'; }
+    else if(state==='saved'){ dot.className='dot ok'; t.textContent='Guardado'; setTimeout(()=>{t.textContent='Listo'}, 1500); }
+    else { dot.className='dot'; t.textContent='Listo'; }
+  }
+  function scheduleSave(){
+    markSaving('saving');
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(()=>{ localStorage.setItem(STORE_KEY, JSON.stringify(data)); markSaving('saved'); render(); }, 300);
+  }
+
+  // Storage -----------------
+  function load(){
+    try{
+      const raw = localStorage.getItem(STORE_KEY);
+      if(raw){ data = JSON.parse(raw); }
+      else { data = {participants: []}; }
+    }catch(e){ console.error('Error al cargar', e); data={participants: []}; }
+    $('#kpiFecha').textContent = new Date().toLocaleDateString();
+    render();
+  }
+
+  // CRUD participantes ------
+  function addOrUpdate(form){
+    const obj = {
+      id: editingId || uuid(),
+      name: $('#f_name').value.trim(),
+      phone: $('#f_phone').value.trim(),
+      startDate: $('#f_start').value || todayISO(),
+      day: clamp(parseInt($('#f_day').value||'1',10),1,21),
+      weightStart: valOrNull($('#f_w0').value),
+      weightCurrent: valOrNull($('#f_w').value),
+      status: 'Activa',
+      notes: $('#f_notes').value.trim(),
+      progress: [],
+      attendance: Array.from({length:21}, ()=>false),
+      lastUpdate: new Date().toISOString()
+    };
+
+    if(!obj.name){ alert('Nombre es requerido'); return; }
+
+    if(editingId){
+      const i = data.participants.findIndex(p=>p.id===editingId);
+      if(i>-1){
+        // Conservar progreso/asistencia existentes
+        obj.progress = data.participants[i].progress||[];
+        obj.attendance = data.participants[i].attendance||Array.from({length:21},()=>false);
+        obj.status = data.participants[i].status||'Activa';
+        data.participants[i] = obj;
+      }
+    } else {
+      data.participants.push(obj);
+    }
+    scheduleSave();
+    $('#dlgForm').close();
+  }
+
+  function valOrNull(v){ v=v?.trim?.(); return v===''||v==null ? null : Number(v); }
+
+  function remove(id){
+    if(!confirm('¿Eliminar participante?')) return;
+    data.participants = data.participants.filter(p=>p.id!==id);
+    scheduleSave();
+  }
+
+  // Progreso / asistencia ----
+  function openProgress(id){
+    progId = id;
+    const p = data.participants.find(x=>x.id===id);
+    if(!p) return;
+    $('#progMeta').textContent = `${p.name} • Día ${p.day}/21`;
+    $('#p_day').value = p.day;
+    $('#p_weight').value = p.weightCurrent ?? '';
+    $('#p_note').value = '';
+
+    // Pintar grid de días 1..21
+    const grid = $('#daysGrid');
+    grid.innerHTML = '';
+    for(let d=1; d<=21; d++){
+      const tick = el('button', {class:'input', type:'button'});
+      tick.style.display='flex'; tick.style.alignItems='center'; tick.style.justifyContent='space-between';
+      tick.style.gap='8px';
+      const left = el('span',{text:`Día ${d}`});
+      const right = el('span');
+      const has = p.progress?.find(r=>r.day===d);
+      right.innerHTML = has && has.weight!=null ? `${has.weight.toFixed(1)} kg` : (p.attendance?.[d-1] ? '✓' : '—');
+      if(p.attendance?.[d-1]) tick.style.borderColor = '#d1fae5';
+      tick.addEventListener('click',()=>{ $('#p_day').value=d; $('#p_weight').focus(); });
+      tick.append(left,right); grid.append(tick);
+    }
+
+    $('#dlgProgress').showModal();
+  }
+
+  function saveProgress(){
+    const p = data.participants.find(x=>x.id===progId);
+    if(!p) return;
+    const d = clamp(parseInt($('#p_day').value||p.day,10),1,21);
+    const w = valOrNull($('#p_weight').value);
+    const note = $('#p_note').value.trim();
+
+    // asistencia automática si hay peso registrado
+    if(w!=null){
+      const existing = p.progress.find(r=>r.day===d);
+      if(existing){ existing.weight=w; existing.date=todayISO(); existing.note=note||existing.note; }
+      else p.progress.push({day:d, weight:w, date: todayISO(), note});
+      p.weightCurrent = w;
+    }
+    p.attendance[d-1] = true;
+    p.day = Math.max(p.day, d);
+    // estado automático
+    if(p.day>=21) p.status='Completó';
+    p.lastUpdate = new Date().toISOString();
+
+    scheduleSave();
+    $('#dlgProgress').close();
+  }
+
+  // Render -------------------
+  function render(){
+    // Filtros
+    const q = ($('#search').value||'').toLowerCase();
+    const st = $('#statusFilter').value;
+    const df = $('#dayFilter').value;
+
+    let list = [...data.participants];
+    if(q) list = list.filter(p=> (p.name||'').toLowerCase().includes(q) || (p.phone||'').includes(q));
+    if(st) list = list.filter(p=> (p.status||'Activa')===st);
+    if(df){
+      if(df==='hoy'){
+        const t = new Date();
+        const diff = Math.ceil((t - new Date((new Date()).getFullYear(), t.getMonth(), t.getDate()-1))/(24*3600*1000));
+        list = list.filter(p=> p.day===clamp(p.day,1,21)); // neutro; placeholder si deseas otra lógica
+      } else {
+        const [a,b] = df.split('-').map(n=>parseInt(n,10));
+        list = list.filter(p=> p.day>=a && p.day<=b);
+      }
+    }
+
+    // KPIs
+    $('#kpiTotal').textContent = data.participants.length;
+    $('#kpiActivas').textContent = data.participants.filter(p=> (p.status||'Activa')==='Activa').length;
+    $('#kpiDone').textContent = data.participants.filter(p=> (p.status||'Activa')==='Completó').length;
+    const arr = data.participants.map(p=> ({a:p.weightStart, b:p.weightCurrent})).filter(x=>x.a!=null && x.b!=null);
+    const avg = arr.length? (arr.reduce((s,x)=> s+((x.a-x.b)/x.a*100),0)/arr.length).toFixed(1)+'%':'0%';
+    $('#kpiAvg').textContent = avg;
+
+    // Tabla
+    const tbody = $('#tbody');
+    tbody.innerHTML='';
+
+    list.forEach((p,i)=>{
+      const tr = el('tr');
+      tr.append(td(i+1));
+
+      const nameTd = td('');
+      const nameBtn = el('button',{class:'btn secondary'}); nameBtn.style.padding='6px 8px'; nameBtn.textContent=p.name||'(Sin nombre)';
+      nameBtn.addEventListener('click',()=> openForm(p.id));
+      nameTd.append(nameBtn); tr.append(nameTd);
+
+      tr.append(td(p.phone||'—'));
+      tr.append(td(p.startDate||'—'));
+      tr.append(td(p.day||1));
+      tr.append(td(p.weightStart!=null ? p.weightStart.toFixed(1) : '—'));
+      tr.append(td(p.weightCurrent!=null ? p.weightCurrent.toFixed(1) : '—'));
+      tr.append(td(formatPct(p.weightStart, p.weightCurrent)));
+
+      const st = p.status||'Activa';
+      const badge = el('span',{class:'badge '+(st==='Activa'?'success': st==='Completó'?'warning':'danger'), text: st});
+      tr.append(td('').appendChild(badge).parentElement);
+
+      tr.append(td(p.notes||'—'));
+
+      const progTd = td('');
+      const canvas = el('canvas',{width:100,height:26});
+      progTd.append(canvas); tr.append(progTd);
+      drawSpark(canvas, p);
+
+      const actions = td(''); actions.className='row-actions';
+      const btnProg = iconBtn('⚙️','Progreso',()=> openProgress(p.id));
+      const btnShare = iconBtn('🟢','WhatsApp',()=> shareParticipant(p));
+      const btnDel = iconBtn('🗑️','Eliminar',()=> remove(p.id));
+      actions.append(btnProg, btnShare, btnDel);
+      tr.append(actions);
+
+      tbody.append(tr);
+    });
+  }
+
+  function td(content){
+    const n = document.createElement('td');
+    if(content instanceof Node){ n.appendChild(content); }
+    else n.textContent = content;
+    return n;
+  }
+
+  function iconBtn(glyph, title, onClick){
+    const b = el('button',{class:'btn secondary', title});
+    b.style.padding='6px 10px'; b.textContent=glyph; b.addEventListener('click', onClick); return b;
+  }
+
+  // Sparklines ----------------
+  function drawSpark(canvas, p){
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0,canvas.width, canvas.height);
+    const w = canvas.width, h = canvas.height;
+    ctx.strokeStyle = '#e5e7eb'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(0,h-1); ctx.lineTo(w,h-1); ctx.stroke();
+    const series = (p.progress||[]).filter(r=>r.weight!=null).sort((a,b)=>a.day-b.day).map(r=>r.weight);
+    if(!series.length){ ctx.fillStyle='#9ca3af'; ctx.font='12px sans-serif'; ctx.fillText('—', w/2-4, h-8); return; }
+    const min = Math.min(...series), max = Math.max(...series);
+    const px = (i)=> i/(series.length-1||1) * (w-4) + 2;
+    const py = (v)=> {
+      if(max===min) return h/2; // línea plana
+      const t = (v-min)/(max-min); return (1-t)*(h-8)+4; 
+    };
+    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--brand');
+    ctx.lineWidth=2; ctx.beginPath();
+    series.forEach((v,i)=>{ const x=px(i), y=py(v); i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+    ctx.stroke();
+  }
+
+  // WhatsApp ------------------
+  function shareParticipant(p){
+    const diffTxt = formatPct(p.weightStart, p.weightCurrent);
+    const msg = `Nutri Less — Reto 21 Días%0A`+
+                `Participante: ${p.name||''}%0A`+
+                `Día ${p.day||1}/21%0A`+
+                `Peso inicial: ${p.weightStart??'—'} kg%0A`+
+                `Peso actual: ${p.weightCurrent??'—'} kg%0A`+
+                `Cambio: ${diffTxt}%0A`+
+                `${p.notes?('Notas: '+encodeURIComponent(p.notes)) : ''}`;
+    const to = phoneMX(p.phone);
+    const url = to ? `https://wa.me/${to}?text=${msg}` : `https://wa.me/?text=${msg}`;
+    window.open(url, '_blank');
+  }
+
+  function shareSummary(){
+    const total = data.participants.length;
+    const act = data.participants.filter(p=>(p.status||'Activa')==='Activa').length;
+    const fin = data.participants.filter(p=>p.status==='Completó').length;
+    const avg = $('#kpiAvg').textContent;
+    const msg = `Nutri Less — Reto 21 Días%0A%0A`+
+                `Participantes: ${total}%0AActivas: ${act}%0ACompletaron: ${fin}%0A`+
+                `Promedio de avance: ${encodeURIComponent(avg)}%0A`+
+                `Fecha: ${encodeURIComponent(new Date().toLocaleString())}`;
+    window.open(`https://wa.me/?text=${msg}`, '_blank');
+  }
+
+  // CSV ----------------------
+  function exportCSV(){
+    const headers = ['ID','Nombre','Telefono','Inicio','Dia','PesoInicial','PesoActual','Estado','Notas','Progreso','Asistencias'];
+    const lines = [headers.join(',')];
+    for(const p of data.participants){
+      const prog = (p.progress||[]).sort((a,b)=>a.day-b.day).map(r=> `${r.day}:${r.weight??''}`).join('|');
+      const asis = (p.attendance||[]).map(v=> v?1:0).join('');
+      const row = [p.id, csvEsc(p.name), p.phone, p.startDate, p.day, p.weightStart??'', p.weightCurrent??'', p.status||'Activa', csvEsc(p.notes||''), csvEsc(prog), asis];
+      lines.push(row.join(','));
+    }
+    downloadFile('nutri_less_reto21.csv', lines.join('\n'));
+  }
+
+  function csvEsc(v){
+    v = v==null ? '' : String(v);
+    if(/[",\n]/.test(v)) return '"'+v.replace(/"/g,'""')+'"';
+    return v;
+  }
+
+  function parseCSV(text){
+    // Parser simple con soporte de comillas dobles
+    const rows=[]; let i=0, cur='', inQ=false; const push=()=>{ row.push(cur); cur=''; }
+    let row=[];
+    for(; i<text.length; i++){
+      const c = text[i];
+      if(inQ){
+        if(c==='"'){
+          if(text[i+1]==='"'){ cur+='"'; i++; } else { inQ=false; }
+        } else cur+=c;
+      } else {
+        if(c==='"') inQ=true;
+        else if(c===','){ push(); }
+        else if(c==='\n' || c==='\r'){
+          if(c==='\r' && text[i+1]==='\n') i++; // CRLF
+          push(); rows.push(row); row=[];
+        } else cur+=c;
+      }
+    }
+    if(cur!==''||row.length) { push(); rows.push(row); }
+    return rows.filter(r=> r.some(c=> (c||'').trim()!==''));
+  }
+
+  function importCSV(file){
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      const rows = parseCSV(reader.result);
+      if(!rows.length){ alert('CSV vacío.'); return; }
+      const head = rows[0].map(h=> norm(h));
+      const idx = (name)=> head.indexOf(norm(name));
+      const iID = idx('ID'), iN=idx('Nombre'), iT=idx('Telefono'), iI=idx('Inicio'), iD=idx('Dia'), iW0=idx('PesoInicial'), iW=idx('PesoActual'), iS=idx('Estado'), iNo=idx('Notas'), iP=idx('Progreso'), iA=idx('Asistencias');
+      const out=[];
+      for(let r=1; r<rows.length; r++){
+        const row = rows[r]; if(!row || row.length===0) continue;
+        const id = row[iID]||uuid();
+        const name = row[iN]||''; if(!name) continue; // requiere nombre
+        const phone = row[iT]||'';
+        const start = row[iI]||todayISO();
+        const day = clamp(parseInt(row[iD]||'1',10)||1,1,21);
+        const w0 = row[iW0]!==''? Number(row[iW0]): null;
+        const w = row[iW]!==''? Number(row[iW]): null;
+        const st = (row[iS]||'Activa');
+        const notes = row[iNo]||'';
+        const prog = [];
+        const progTxt = row[iP]||''; // formato "dia:valor|dia:valor"
+        progTxt.split('|').forEach(pair=>{
+          const [d,v] = pair.split(':');
+          const dd = parseInt(d,10); if(!dd) return;
+          const vn = v!==undefined && v!==''? Number(v): null;
+          prog.push({day: clamp(dd,1,21), weight: vn, date: todayISO()});
+        });
+        const asis = (row[iA]||'').split('').map(c=> c==='1');
+        const attendance = Array.from({length:21}, (_,i)=> asis[i]||false);
+        out.push({id, name, phone, startDate:start, day, weightStart:w0, weightCurrent:w, status:st, notes, progress:prog, attendance, lastUpdate:new Date().toISOString()});
+      }
+      if(!out.length){ alert('No se encontraron filas válidas. Asegura que el CSV incluya encabezados y al menos 1 fila.'); return; }
+      // fusionar por id (si existe) o por nombre+tel
+      out.forEach(nv=>{
+        const i = data.participants.findIndex(p=> p.id===nv.id || (p.name===nv.name && p.phone===nv.phone));
+        if(i>-1) data.participants[i]=nv; else data.participants.push(nv);
+      });
+      scheduleSave();
+      alert('Importación completada: '+out.length+' registro(s).');
+    };
+    reader.readAsText(file);
+  }
+
+  function norm(s){ return (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'').toLowerCase(); }
+
+  function templateCSV(){
+    const headers = ['ID','Nombre','Telefono','Inicio','Dia','PesoInicial','PesoActual','Estado','Notas','Progreso','Asistencias'];
+    const sample = ['p_abc123','María Pérez','9611234567', todayISO(), '3','72.5','71.8','Activa','Sin gluten','1:72.5|2:72.1|3:71.8','111000000000000000000'];
+    downloadFile('plantilla_nutri_less.csv', [headers.join(','), sample.map(csvEsc).join(',')].join('\n'));
+  }
+
+  function downloadFile(filename, text){
+    const blob = new Blob([text], {type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download=filename; a.click();
+    setTimeout(()=> URL.revokeObjectURL(url), 5000);
+  }
+
+  // UI eventos ---------------
+  function openForm(id=null){
+    editingId = id;
+    const dlg = $('#dlgForm');
+    if(id){
+      const p = data.participants.find(x=>x.id===id); if(!p) return;
+      $('#formTitle').textContent = 'Editar participante';
+      $('#f_name').value=p.name||'';
+      $('#f_phone').value=p.phone||'';
+      $('#f_start').value=p.startDate||todayISO();
+      $('#f_day').value=p.day||1;
+      $('#f_w0').value=p.weightStart??'';
+      $('#f_w').value=p.weightCurrent??'';
+      $('#f_notes').value=p.notes||'';
+    } else {
+      $('#formTitle').textContent = 'Añadir participante';
+      $('#f_name').value=''; $('#f_phone').value=''; $('#f_start').value=todayISO(); $('#f_day').value=1; $('#f_w0').value=''; $('#f_w').value=''; $('#f_notes').value='';
+    }
+    dlg.showModal();
+  }
+
+  // Borrar todo
+  function clearAll(){
+    if(!confirm('Esto eliminará todos los datos guardados en este navegador. ¿Continuar?')) return;
+    localStorage.removeItem(STORE_KEY);
+    data={participants:[]}; render();
+    markSaving();
+  }
+
+  // Listeners
+  $('#btnAdd').addEventListener('click', ()=> openForm());
+  $('#fabAdd').addEventListener('click', ()=> openForm());
+  $('#btnSave').addEventListener('click', (e)=>{ e.preventDefault(); addOrUpdate(); });
+  $('#btnProgSave').addEventListener('click', (e)=>{ e.preventDefault(); saveProgress(); });
+  $('#btnExport').addEventListener('click', exportCSV);
+  $('#btnTemplate').addEventListener('click', templateCSV);
+  $('#btnShareAll').addEventListener('click', shareSummary);
+  $('#btnClear').addEventListener('click', clearAll);
+
+  $('#csvInput').addEventListener('change', (e)=>{
+    const file = e.target.files?.[0]; if(file) importCSV(file);
+    e.target.value=''; // reset
+  });
+
+  ['search','statusFilter','dayFilter'].forEach(id=> document.getElementById(id).addEventListener('input', render));
+
+  // Init
+  load();
+
+  // Semillas (opcional): descomenta para ejemplos iniciales
+  // if(!data.participants.length){
+  //   data.participants.push({id:uuid(), name:'Ana López', phone:'9611112233', startDate:todayISO(), day:3, weightStart:70.0, weightCurrent:69.2, status:'Activa', notes:'Objetivo: -4kg', progress:[{day:1,weight:70,date:todayISO()},{day:2,weight:69.6,date:todayISO()},{day:3,weight:69.2,date:todayISO()}], attendance:[true,true,true,...Array(18).fill(false)], lastUpdate:new Date().toISOString()});
+  //   scheduleSave();
+  // }
+
+  </script>
+
+<script>
+(function(){
+  var key='NL_RETO_MES';
+  var el=document.getElementById('retoMes');
+  if(!el) return;
+  try{ el.value = localStorage.getItem(key)||''; }catch(e){}
+  el.addEventListener('input', function(){
+    try{ localStorage.setItem(key, (el.value||'').trim()); }catch(e){}
+  });
+})();
+</script>
+
+</body>
+</html>
