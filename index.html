@@ -134,6 +134,7 @@
       <div class="sep"></div>
       <button class="btn secondary" id="btnLoadWork" title="Cargar archivo de trabajo (JSON)">Cargar archivo</button>
       <button class="btn secondary" id="btnSaveWork" title="Guardar en el mismo archivo (requiere permiso)">Guardar en el mismo archivo</button>
+      <button class="btn secondary" id="btnDownloadJSON" title="Descargar JSON (libreta completa)">Descargar JSON</button>
     </div>
 
     <!-- Acciones principales -->
@@ -214,7 +215,9 @@
             <th>Peso actual</th>
             <th>Cambio</th>
             <th>Estado</th>
+            <th>Confirmación</th>
             <th>Notas</th>
+            <th>Comentario</th>
             <th>Progreso</th>
             <th>Acciones</th>
           </tr>
@@ -371,6 +374,8 @@
       weightCurrent: valOrNull($('#f_w').value),
       status: 'Activa',
       notes: $('#f_notes').value.trim(),
+      confirmed: (typeof $('#f_confirm')!=='undefined' && $('#f_confirm')) ? !!$('#f_confirm').checked : false,
+      comment: '',
       progress: [],
       attendance: Array.from({length:21}, ()=>false),
       lastUpdate: new Date().toISOString()
@@ -381,6 +386,8 @@
       const i = data.participants.findIndex(p=>p.id===editingId);
       if(i>-1){
         obj.progress = data.participants[i].progress||[];
+        obj.confirmed = data.participants[i].confirmed||false;
+        obj.comment = data.participants[i].comment||'';
         obj.attendance = data.participants[i].attendance||Array.from({length:21},()=>false);
         obj.status = data.participants[i].status||'Activa';
         data.participants[i] = obj;
@@ -498,11 +505,28 @@
       tr.append(td(p.weightCurrent!=null ? p.weightCurrent.toFixed(1) : '—'));
       tr.append(td(formatPct(p.weightStart, p.weightCurrent)));
 
+      
       const st = p.status||'Activa';
       const badge = el('span',{class:'badge '+(st==='Activa'?'success': st==='Completó'?'warning':'danger'), text: st});
       tr.append(td('').appendChild(badge).parentElement);
 
+      // Confirmación (checkbox)
+      const confTd = td('');
+      const conf = el('input',{type:'checkbox'});
+      conf.checked = !!p.confirmed;
+      conf.addEventListener('change', ()=>{ p.confirmed = conf.checked; p.lastUpdate = new Date().toISOString(); scheduleSave(); });
+      confTd.append(conf); tr.append(confTd);
+
+      // Notas (ya existía)
       tr.append(td(p.notes||'—'));
+
+      // Comentario (editable inline)
+      const comTd = td('');
+      const cin = el('input',{class:'input'});
+      cin.value = p.comment || '';
+      cin.placeholder = 'Comentario…';
+      cin.addEventListener('change', ()=>{ p.comment = cin.value.trim(); p.lastUpdate = new Date().toISOString(); scheduleSave(); });
+      comTd.append(cin); tr.append(comTd);
 
       const progTd = td('');
       const canvas = el('canvas',{width:100,height:26});
@@ -568,12 +592,12 @@
 
   // CSV ----------------------
   function exportCSV(){
-    const headers = ['ID','Nombre','Telefono','Inicio','Dia','PesoInicial','PesoActual','Estado','Notas','Progreso','Asistencias'];
+    const headers = ['ID','Nombre','Telefono','Inicio','Dia','PesoInicial','PesoActual','Estado','Notas','Confirmado','Comentario','Progreso','Asistencias'];
     const lines = [headers.join(',')];
     for(const p of (data?.participants||[])){
       const prog = (p.progress||[]).sort((a,b)=>a.day-b.day).map(r=> `${r.day}:${r.weight??''}`).join('|');
       const asis = (p.attendance||[]).map(v=> v?1:0).join('');
-      const row = [p.id, csvEsc(p.name), p.phone, p.startDate, p.day, p.weightStart??'', p.weightCurrent??'', p.status||'Activa', csvEsc(p.notes||''), csvEsc(prog), asis];
+      const row = [p.id, csvEsc(p.name), p.phone, p.startDate, p.day, p.weightStart??'', p.weightCurrent??'', p.status||'Activa', csvEsc(p.notes||''), (p.confirmed?1:0), csvEsc(p.comment||''), csvEsc(prog), asis];
       lines.push(row.join(','));
     }
     const fname = `nutri_less_${(book.current||'mes').replace(/\s+/g,'_')}.csv`;
@@ -598,7 +622,7 @@
       if(!rows.length){ alert('CSV vacío.'); return; }
       const head = rows[0].map(h=> norm(h));
       const idx = (name)=> head.indexOf(norm(name));
-      const iID = idx('ID'), iN=idx('Nombre'), iT=idx('Telefono'), iI=idx('Inicio'), iD=idx('Dia'), iW0=idx('PesoInicial'), iW=idx('PesoActual'), iS=idx('Estado'), iNo=idx('Notas'), iP=idx('Progreso'), iA=idx('Asistencias');
+      const iID = idx('ID'), iN=idx('Nombre'), iT=idx('Telefono'), iI=idx('Inicio'), iD=idx('Dia'), iW0=idx('PesoInicial'), iW=idx('PesoActual'), iS=idx('Estado'), iNo=idx('Notas'), iC=idx('Confirmado'), iCm=idx('Comentario'), iP=idx('Progreso'), iA=idx('Asistencias');
       const out=[];
       for(let r=1; r<rows.length; r++){
         const row = rows[r]; if(!row || row.length===0) continue;
@@ -611,12 +635,14 @@
         const w = row[iW]!==''? Number(row[iW]): null;
         const st = (row[iS]||'Activa');
         const notes = row[iNo]||'';
+        const confirmed = iC>=0 ? truthy(row[iC]) : false;
+        const comment = iCm>=0 ? row[iCm] : '';
         const prog = [];
         const progTxt = row[iP]||''; // "dia:valor|dia:valor"
         progTxt.split('|').forEach(pair=>{ const [d,v] = pair.split(':'); const dd = parseInt(d,10); if(!dd) return; const vn = v!==undefined && v!==''? Number(v): null; prog.push({day: clamp(dd,1,21), weight: vn, date: todayISO()}); });
         const asis = (row[iA]||'').split('').map(c=> c==='1');
         const attendance = Array.from({length:21}, (_,i)=> asis[i]||false);
-        out.push({id, name, phone, startDate:start, day, weightStart:w0, weightCurrent:w, status:st, notes, progress:prog, attendance, lastUpdate:new Date().toISOString()});
+        out.push({id, name, phone, startDate:start, day, weightStart:w0, weightCurrent:w, status:st, notes, confirmed, comment, progress:prog, attendance, lastUpdate:new Date().toISOString()});
       }
       if(!out.length){ alert('No se encontraron filas válidas.'); return; }
       out.forEach(nv=>{ const i = data.participants.findIndex(p=> p.id===nv.id || (p.name===nv.name && p.phone===nv.phone)); if(i>-1) data.participants[i]=nv; else data.participants.push(nv); });
@@ -626,9 +652,10 @@
     reader.readAsText(file);
   }
   function norm(s){ return (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'').toLowerCase(); }
+  function truthy(v){ if(v==null) return false; const s=String(v).trim().toLowerCase(); return ['1','true','si','sí','x','ok','yes'].includes(s); }
   function templateCSV(){
-    const headers = ['ID','Nombre','Telefono','Inicio','Dia','PesoInicial','PesoActual','Estado','Notas','Progreso','Asistencias'];
-    const sample = ['p_abc123','María Pérez','9611234567', todayISO(), '3','72.5','71.8','Activa','Sin gluten','1:72.5|2:72.1|3:71.8','111000000000000000000'];
+    const headers = ['ID','Nombre','Telefono','Inicio','Dia','PesoInicial','PesoActual','Estado','Notas','Confirmado','Comentario','Progreso','Asistencias'];
+    const sample = ['p_abc123','María Pérez','9611234567', todayISO(), '3','72.5','71.8','Activa','Sin gluten','1','Sin comentarios','1:72.5|2:72.1|3:71.8','111000000000000000000'];
     downloadFile('plantilla_nutri_less.csv', [headers.join(','), sample.map(csvEsc).join(',')].join('\n'));
   }
   function downloadFile(filename, text){ const blob = new Blob([text], {type:'text/plain;charset=utf-8;'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download=filename; a.click(); setTimeout(()=> URL.revokeObjectURL(url), 5000); }
@@ -726,6 +753,7 @@ $('#btnAdd').addEventListener('click', ()=> openForm());
 
   $('#btnLoadWork').addEventListener('click', loadWork);
   $('#btnSaveWork').addEventListener('click', saveWork);
+  $('#btnDownloadJSON').addEventListener('click', ()=>{ const json = JSON.stringify(book, null, 2); downloadFile('nutri_less_workbook.json', json); });
 $('#search').addEventListener('input', render);
 $('#statusFilter').addEventListener('change', render);
 $('#dayFilter').addEventListener('change', render);
