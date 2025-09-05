@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Nutri Less — Control Reto 21 Días</title>
-  <meta name="description" content="Panel para gestionar participantes y progreso del Reto 21 Días de Nutri Less. Importa/Exporta CSV, comparte por WhatsApp y guarda automáticamente." />
+  <meta name="description" content="Panel para gestionar participantes y progreso del Reto 21 Días de Nutri Less. Múltiples meses (hojas), importación/exportación CSV, archivo de trabajo y guardado automático." />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect rx='20' width='100' height='100' fill='%235F2EEA'/%3E%3Ctext x='50' y='60' text-anchor='middle' font-size='54' fill='white' font-family='sans-serif'%3ENL%3C/text%3E%3C/svg%3E" />
   <style>
     :root{
@@ -14,7 +14,6 @@
       --brand-100:#EEE8FF;
       --ink:#1f2937;             /* gris oscuro */
       --muted:#6b7280;           /* gris medio */
-      --bg:#fafafa;              /* fondo base */
       --card:#ffffff;            /* tarjetas */
       --ok:#10b981;              /* verde */
       --warn:#f59e0b;            /* ámbar */
@@ -24,19 +23,11 @@
     }
     *{box-sizing:border-box}
     html,body{height:100%}
-    body{
-      margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
-      color:var(--ink); background:linear-gradient(180deg,#f7f5ff, #fff 280px);
-    }
+    body{margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial; color:var(--ink); background:linear-gradient(180deg,#f7f5ff, #fff 280px);}    
     .shell{max-width:1100px; margin:0 auto; padding:16px 16px 80px}
 
     /* Header */
-    header{
-      position:sticky; top:0; z-index:50;
-      backdrop-filter:saturate(1.1) blur(6px);
-      background:linear-gradient(180deg, rgba(255,255,255,.9), rgba(255,255,255,.7));
-      border-bottom:1px solid #eee; 
-    }
+    header{position:sticky; top:0; z-index:50; backdrop-filter:saturate(1.1) blur(6px); background:linear-gradient(180deg, rgba(255,255,255,.9), rgba(255,255,255,.7)); border-bottom:1px solid #eee;}
     .header-inner{display:flex; gap:12px; align-items:center; padding:10px 16px}
     .logo{display:flex; align-items:center; gap:12px}
     .logo-badge{width:40px; height:40px; border-radius:12px; display:grid; place-items:center; color:#fff; font-weight:800; letter-spacing:.5px; background:linear-gradient(135deg,var(--brand),var(--brand-700)); box-shadow:var(--shadow)}
@@ -52,15 +43,18 @@
     .btn:active{transform:translateY(1px)}
     .btn svg{width:18px; height:18px}
 
-    /* Top actions bar */
+    /* Bars */
     .actions{display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin:12px 0 16px}
     .actions .file{position:relative; overflow:hidden}
     .actions input[type=file]{position:absolute; inset:0; opacity:0; cursor:pointer}
 
-    /* Search & Filters */
-    .filters{display:grid; grid-template-columns: 1fr 200px 160px; gap:10px; align-items:center; margin:0 0 14px}
+    .monthbar{display:flex; gap:10px; align-items:center; margin:8px 0 8px}
+    .monthbar .sep{width:1px;height:28px;background:#eee}
     .input, select{width:100%; padding:10px 12px; border-radius:12px; border:1px solid #e5e7eb; background:#fff}
     .hint{font-size:12px; color:var(--muted); margin-top:-4px;}
+
+    /* Filters */
+    .filters{display:grid; grid-template-columns: 1fr 200px 160px; gap:10px; align-items:center; margin:0 0 14px}
 
     /* Summary cards */
     .summary{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:14px 0}
@@ -82,11 +76,8 @@
 
     .row-actions{display:flex; gap:6px}
 
-    /* Footer bar for mobile */
-    .fab{
-      position:fixed; right:16px; bottom:16px; z-index:40;
-      background:linear-gradient(135deg,var(--brand),var(--brand-700)); color:#fff; width:56px; height:56px; border-radius:16px; display:grid; place-items:center; box-shadow:0 12px 24px rgba(90,0,255,.35);
-    }
+    /* FAB */
+    .fab{ position:fixed; right:16px; bottom:16px; z-index:40; background:linear-gradient(135deg,var(--brand),var(--brand-700)); color:#fff; width:56px; height:56px; border-radius:16px; display:grid; place-items:center; box-shadow:0 12px 24px rgba(90,0,255,.35);}    
 
     /* Dialog */
     dialog{border:none; border-radius:16px; width:min(720px,92vw); padding:0; box-shadow:var(--shadow)}
@@ -99,7 +90,7 @@
     .close-x{position:absolute; right:12px; top:10px; color:#777; background:#fff; border:1px solid #eee; border-radius:10px; width:32px; height:32px; display:grid; place-items:center}
 
     /* Save indicator */
-    .save-indicator{display:flex; align-items:center; gap:8px; color:var(--muted); font-size:12px}
+    .save-indicator{display:flex; align-items:center; gap:8px; color:#6b7280; font-size:12px}
     .dot{width:10px; height:10px; border-radius:999px; background:#bbb}
     .dot.ok{background:var(--ok)}
     .dot.warn{background:var(--warn)}
@@ -116,11 +107,7 @@
       .summary{grid-template-columns:1fr 1fr}
       .btn{padding:10px 12px}
     }
-  
-    /* Mes del reto (mínimo impacto) */
-    .monthbar{display:flex;gap:10px;align-items:center;margin:10px 0 6px}
-    .monthbar label{font-size:12px;opacity:.9}
-</style>
+  </style>
 </head>
 <body>
   <header>
@@ -128,7 +115,7 @@
       <div class="logo">
         <div class="logo-badge" aria-label="Nutri Less">NL</div>
         <div>
-          <h1>Nutri Less <small>• Reto 21 Días</small></h1>
+          <h1>Nutri Less <small>• Reto 21 Días — <span id="monthBadge"></span></small></h1>
           <div class="save-indicator" id="saveState"><span class="dot" id="saveDot"></span><span id="saveText">Listo</span></div>
         </div>
       </div>
@@ -138,24 +125,28 @@
   </header>
 
   <main class="shell">
-    <!-- Mes del reto (mínima modificación) -->
+    <!-- Barra de Meses (hojas) y archivo de trabajo -->
     <div class="monthbar">
       <label>Mes del reto
-        <input class="input" id="retoMes" placeholder="Ej. Septiembre 2025">
+        <select class="input" id="monthSelect"></select>
       </label>
+      <button class="btn secondary" id="btnNewMonth">+ Mes</button>
+      <div class="sep"></div>
+      <button class="btn secondary" id="btnLoadWork" title="Cargar archivo de trabajo (JSON)">Cargar archivo</button>
+      <button class="btn secondary" id="btnSaveWork" title="Guardar en el mismo archivo (requiere permiso)">Guardar en el mismo archivo</button>
     </div>
 
     <!-- Acciones principales -->
     <div class="actions">
-      <label class="btn secondary file" title="Importar archivo CSV">
+      <label class="btn secondary file" title="Importar archivo CSV (mes activo)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Importar CSV
         <input type="file" id="csvInput" accept=".csv" />
       </label>
-      <button class="btn secondary" id="btnExport"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Exportar CSV</button>
+      <button class="btn secondary" id="btnExport"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Exportar CSV (mes)</button>
       <button class="btn secondary" id="btnTemplate" title="Descargar plantilla CSV">Plantilla CSV</button>
       <button class="btn" id="btnShareAll"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z"/><path d="M14.31 8l5.74 3.31-5.74 3.31"/><path d="M9.69 8L3.95 11.31 9.69 14.62"/></svg> Compartir resumen</button>
-      <button class="btn ghost" id="btnClear" title="Borrar todos los datos (local)">Borrar datos</button>
+      <button class="btn ghost" id="btnClear" title="Borrar solo el mes activo">Borrar mes</button>
     </div>
 
     <!-- Filtros -->
@@ -175,7 +166,7 @@
         <option value="hoy">Hoy</option>
       </select>
     </div>
-    <div class="hint">Consejo: toca el nombre para editar. Usa el botón ⚙️ para registrar peso y asistencia diaria.</div>
+    <div class="hint">Consejo: cambia el "Mes del reto" para trabajar hojas separadas. Importar/Exportar CSV aplica al <b>mes activo</b>. El archivo de trabajo (JSON) guarda <b>todos los meses</b>.</div>
 
     <!-- Resumen -->
     <section class="summary">
@@ -303,32 +294,14 @@
   <script>
   // ==========================
   // Nutri Less — Reto 21 Días
-  // Panel 100% local (sin servidor). Guarda en localStorage.
+  // Soporta múltiples meses (hojas) y archivo de trabajo con File System Access API.
   // ==========================
 
-  /*\
-    📦 Estructura de datos (localStorage: NL_RETO21_V1)
-    participant = {
-      id: string,
-      name: string,
-      phone: string,          // 10 dígitos MX
-      startDate: 'YYYY-MM-DD',
-      day: 1..21,
-      weightStart: number|null,
-      weightCurrent: number|null,
-      status: 'Activa'|'Completó'|'Abandonó',
-      notes: string,
-      progress: [ {day:number, weight:number|null, date:string, note?:string} ],
-      attendance: boolean[21],
-      lastUpdate: ISOString
-    }
-  */
-
-  const STORE_KEY = 'NL_RETO21_V1';
-  let data = { participants: [] };
-  let editingId = null;         // id en edición
-  let progId = null;            // id en progreso
+  const STORE_KEY = 'NL_RETO21_BOOK_V1';
+  let book = { current: '', months: {} };
+  let data = null;                // referencia al mes activo (book.months[book.current])
   let saveTimer = null;
+  let fileHandle = null;          // handler del archivo de trabajo (no persistente entre sesiones)
 
   // Helpers -----------------
   const $ = sel => document.querySelector(sel);
@@ -336,6 +309,7 @@
   const todayISO = ()=> new Date().toISOString().slice(0,10);
   const uuid = ()=> 'p_' + Math.random().toString(36).slice(2,9);
   const clamp = (v,min,max)=> Math.min(max, Math.max(min, v));
+  const monthName = (d=new Date())=> d.toLocaleString('es-MX', {month:'long', year:'numeric'}).replace(/^([a-z])/,(m)=>m.toUpperCase());
 
   function formatPct(a,b){
     if(a==null || b==null || !isFinite(a) || !isFinite(b)) return '—';
@@ -345,10 +319,8 @@
     const digits = (num||'').replace(/\D/g,'');
     if(digits.length===10) return '52'+digits; // MX país 52
     if(digits.length===12 && digits.startsWith('52')) return digits;
-    return null; // no estándar
+    return null;
   }
-  function encodeWA(text){ return encodeURIComponent(text); }
-
   function markSaving(state){
     const dot = $('#saveDot'); const t = $('#saveText');
     if(state==='saving'){ dot.className='dot warn'; t.textContent='Guardando…'; }
@@ -358,22 +330,37 @@
   function scheduleSave(){
     markSaving('saving');
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(()=>{ localStorage.setItem(STORE_KEY, JSON.stringify(data)); markSaving('saved'); render(); }, 300);
+    saveTimer = setTimeout(()=>{ localStorage.setItem(STORE_KEY, JSON.stringify(book)); markSaving('saved'); render(); }, 300);
+  }
+
+  // Months (hojas) -----------
+  function ensureMonth(name){ if(!book.months[name]) book.months[name] = { participants: [] }; }
+  function switchMonth(name){ ensureMonth(name); book.current = name; data = book.months[name]; $('#monthBadge').textContent = name; fillMonthSelect(); scheduleSave(); render(); }
+  function fillMonthSelect(){
+    const sel = $('#monthSelect'); sel.innerHTML='';
+    Object.keys(book.months).sort((a,b)=> a.localeCompare(b,'es')).forEach(m=>{
+      const o = el('option',{text:m}); if(m===book.current) o.selected=true; sel.append(o);
+    });
   }
 
   // Storage -----------------
   function load(){
     try{
       const raw = localStorage.getItem(STORE_KEY);
-      if(raw){ data = JSON.parse(raw); }
-      else { data = {participants: []}; }
-    }catch(e){ console.error('Error al cargar', e); data={participants: []}; }
-    $('#kpiFecha').textContent = new Date().toLocaleDateString();
+      if(raw){ book = JSON.parse(raw)||{current:'', months:{}}; }
+    }catch(e){ console.error('Error al cargar', e); }
+    if(!book || typeof book!== 'object' || !book.months) book = { current:'', months:{} };
+    if(!book.current){ book.current = monthName(); }
+    ensureMonth(book.current);
+    data = book.months[book.current];
+    $('#kpiFecha').textContent = new Date().toLocaleDateString('es-MX');
+    $('#monthBadge').textContent = book.current;
+    fillMonthSelect();
     render();
   }
 
   // CRUD participantes ------
-  function addOrUpdate(form){
+  function addOrUpdate(){
     const obj = {
       id: editingId || uuid(),
       name: $('#f_name').value.trim(),
@@ -388,13 +375,11 @@
       attendance: Array.from({length:21}, ()=>false),
       lastUpdate: new Date().toISOString()
     };
-
     if(!obj.name){ alert('Nombre es requerido'); return; }
 
     if(editingId){
       const i = data.participants.findIndex(p=>p.id===editingId);
       if(i>-1){
-        // Conservar progreso/asistencia existentes
         obj.progress = data.participants[i].progress||[];
         obj.attendance = data.participants[i].attendance||Array.from({length:21},()=>false);
         obj.status = data.participants[i].status||'Activa';
@@ -410,12 +395,15 @@
   function valOrNull(v){ v=v?.trim?.(); return v===''||v==null ? null : Number(v); }
 
   function remove(id){
-    if(!confirm('¿Eliminar participante?')) return;
+    if(!confirm('¿Eliminar participante del mes actual?')) return;
     data.participants = data.participants.filter(p=>p.id!==id);
     scheduleSave();
   }
 
   // Progreso / asistencia ----
+  let editingId = null;         // id en edición
+  let progId = null;            // id en progreso
+
   function openProgress(id){
     progId = id;
     const p = data.participants.find(x=>x.id===id);
@@ -425,7 +413,6 @@
     $('#p_weight').value = p.weightCurrent ?? '';
     $('#p_note').value = '';
 
-    // Pintar grid de días 1..21
     const grid = $('#daysGrid');
     grid.innerHTML = '';
     for(let d=1; d<=21; d++){
@@ -451,7 +438,6 @@
     const w = valOrNull($('#p_weight').value);
     const note = $('#p_note').value.trim();
 
-    // asistencia automática si hay peso registrado
     if(w!=null){
       const existing = p.progress.find(r=>r.day===d);
       if(existing){ existing.weight=w; existing.date=todayISO(); existing.note=note||existing.note; }
@@ -460,7 +446,6 @@
     }
     p.attendance[d-1] = true;
     p.day = Math.max(p.day, d);
-    // estado automático
     if(p.day>=21) p.status='Completó';
     p.lastUpdate = new Date().toISOString();
 
@@ -470,34 +455,30 @@
 
   // Render -------------------
   function render(){
-    // Filtros
     const q = ($('#search').value||'').toLowerCase();
     const st = $('#statusFilter').value;
     const df = $('#dayFilter').value;
 
-    let list = [...data.participants];
+    let list = [...(data?.participants||[])];
     if(q) list = list.filter(p=> (p.name||'').toLowerCase().includes(q) || (p.phone||'').includes(q));
     if(st) list = list.filter(p=> (p.status||'Activa')===st);
     if(df){
       if(df==='hoy'){
-        const t = new Date();
-        const diff = Math.ceil((t - new Date((new Date()).getFullYear(), t.getMonth(), t.getDate()-1))/(24*3600*1000));
-        list = list.filter(p=> p.day===clamp(p.day,1,21)); // neutro; placeholder si deseas otra lógica
-      } else {
+      const t = todayISO();
+      list = list.filter(p => (p.lastUpdate||'').slice(0,10)===t);
+    } else {
         const [a,b] = df.split('-').map(n=>parseInt(n,10));
         list = list.filter(p=> p.day>=a && p.day<=b);
       }
     }
 
-    // KPIs
-    $('#kpiTotal').textContent = data.participants.length;
-    $('#kpiActivas').textContent = data.participants.filter(p=> (p.status||'Activa')==='Activa').length;
-    $('#kpiDone').textContent = data.participants.filter(p=> (p.status||'Activa')==='Completó').length;
-    const arr = data.participants.map(p=> ({a:p.weightStart, b:p.weightCurrent})).filter(x=>x.a!=null && x.b!=null);
+    $('#kpiTotal').textContent = (data?.participants||[]).length;
+    $('#kpiActivas').textContent = (data?.participants||[]).filter(p=> (p.status||'Activa')==='Activa').length;
+    $('#kpiDone').textContent = (data?.participants||[]).filter(p=> (p.status||'Activa')==='Completó').length;
+    const arr = (data?.participants||[]).map(p=> ({a:p.weightStart, b:p.weightCurrent})).filter(x=>x.a!=null && x.b!=null);
     const avg = arr.length? (arr.reduce((s,x)=> s+((x.a-x.b)/x.a*100),0)/arr.length).toFixed(1)+'%':'0%';
     $('#kpiAvg').textContent = avg;
 
-    // Tabla
     const tbody = $('#tbody');
     tbody.innerHTML='';
 
@@ -539,17 +520,8 @@
     });
   }
 
-  function td(content){
-    const n = document.createElement('td');
-    if(content instanceof Node){ n.appendChild(content); }
-    else n.textContent = content;
-    return n;
-  }
-
-  function iconBtn(glyph, title, onClick){
-    const b = el('button',{class:'btn secondary', title});
-    b.style.padding='6px 10px'; b.textContent=glyph; b.addEventListener('click', onClick); return b;
-  }
+  function td(content){ const n = document.createElement('td'); if(content instanceof Node){ n.appendChild(content); } else n.textContent = content; return n; }
+  function iconBtn(glyph, title, onClick){ const b = el('button',{class:'btn secondary', title}); b.style.padding='6px 10px'; b.textContent=glyph; b.addEventListener('click', onClick); return b; }
 
   // Sparklines ----------------
   function drawSpark(canvas, p){
@@ -561,21 +533,17 @@
     if(!series.length){ ctx.fillStyle='#9ca3af'; ctx.font='12px sans-serif'; ctx.fillText('—', w/2-4, h-8); return; }
     const min = Math.min(...series), max = Math.max(...series);
     const px = (i)=> i/(series.length-1||1) * (w-4) + 2;
-    const py = (v)=> {
-      if(max===min) return h/2; // línea plana
-      const t = (v-min)/(max-min); return (1-t)*(h-8)+4; 
-    };
+    const py = (v)=> { if(max===min) return h/2; const t = (v-min)/(max-min); return (1-t)*(h-8)+4; };
     ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--brand');
-    ctx.lineWidth=2; ctx.beginPath();
-    series.forEach((v,i)=>{ const x=px(i), y=py(v); i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
-    ctx.stroke();
+    ctx.lineWidth=2; ctx.beginPath(); series.forEach((v,i)=>{ const x=px(i), y=py(v); i?ctx.lineTo(x,y):ctx.moveTo(x,y); }); ctx.stroke();
   }
 
   // WhatsApp ------------------
   function shareParticipant(p){
     const diffTxt = formatPct(p.weightStart, p.weightCurrent);
     const msg = `Nutri Less — Reto 21 Días%0A`+
-                `Participante: ${p.name||''}%0A`+
+                `Mes: ${encodeURIComponent(book.current)}%0A`+
+                `Participante: ${encodeURIComponent(p.name||'') }%0A`+
                 `Día ${p.day||1}/21%0A`+
                 `Peso inicial: ${p.weightStart??'—'} kg%0A`+
                 `Peso actual: ${p.weightCurrent??'—'} kg%0A`+
@@ -585,16 +553,16 @@
     const url = to ? `https://wa.me/${to}?text=${msg}` : `https://wa.me/?text=${msg}`;
     window.open(url, '_blank');
   }
-
   function shareSummary(){
-    const total = data.participants.length;
-    const act = data.participants.filter(p=>(p.status||'Activa')==='Activa').length;
-    const fin = data.participants.filter(p=>p.status==='Completó').length;
+    const total = (data?.participants||[]).length;
+    const act = (data?.participants||[]).filter(p=>(p.status||'Activa')==='Activa').length;
+    const fin = (data?.participants||[]).filter(p=>p.status==='Completó').length;
     const avg = $('#kpiAvg').textContent;
-    const msg = `Nutri Less — Reto 21 Días%0A%0A`+
+    const msg = `Nutri Less — Reto 21 Días%0A`+
+                `Mes: ${encodeURIComponent(book.current)}%0A%0A`+
                 `Participantes: ${total}%0AActivas: ${act}%0ACompletaron: ${fin}%0A`+
                 `Promedio de avance: ${encodeURIComponent(avg)}%0A`+
-                `Fecha: ${encodeURIComponent(new Date().toLocaleString())}`;
+                `Fecha: ${encodeURIComponent(new Date().toLocaleString('es-MX'))}`;
     window.open(`https://wa.me/?text=${msg}`, '_blank');
   }
 
@@ -602,44 +570,27 @@
   function exportCSV(){
     const headers = ['ID','Nombre','Telefono','Inicio','Dia','PesoInicial','PesoActual','Estado','Notas','Progreso','Asistencias'];
     const lines = [headers.join(',')];
-    for(const p of data.participants){
+    for(const p of (data?.participants||[])){
       const prog = (p.progress||[]).sort((a,b)=>a.day-b.day).map(r=> `${r.day}:${r.weight??''}`).join('|');
       const asis = (p.attendance||[]).map(v=> v?1:0).join('');
       const row = [p.id, csvEsc(p.name), p.phone, p.startDate, p.day, p.weightStart??'', p.weightCurrent??'', p.status||'Activa', csvEsc(p.notes||''), csvEsc(prog), asis];
       lines.push(row.join(','));
     }
-    downloadFile('nutri_less_reto21.csv', lines.join('\n'));
+    const fname = `nutri_less_${(book.current||'mes').replace(/\s+/g,'_')}.csv`;
+    downloadFile(fname, lines.join('\n'));
   }
-
-  function csvEsc(v){
-    v = v==null ? '' : String(v);
-    if(/[",\n]/.test(v)) return '"'+v.replace(/"/g,'""')+'"';
-    return v;
-  }
-
+  function csvEsc(v){ v = v==null ? '' : String(v); if(/[",\n]/.test(v)) return '"'+v.replace(/"/g,'""')+'"'; return v; }
   function parseCSV(text){
-    // Parser simple con soporte de comillas dobles
     const rows=[]; let i=0, cur='', inQ=false; const push=()=>{ row.push(cur); cur=''; }
     let row=[];
     for(; i<text.length; i++){
       const c = text[i];
-      if(inQ){
-        if(c==='"'){
-          if(text[i+1]==='"'){ cur+='"'; i++; } else { inQ=false; }
-        } else cur+=c;
-      } else {
-        if(c==='"') inQ=true;
-        else if(c===','){ push(); }
-        else if(c==='\n' || c==='\r'){
-          if(c==='\r' && text[i+1]==='\n') i++; // CRLF
-          push(); rows.push(row); row=[];
-        } else cur+=c;
-      }
+      if(inQ){ if(c==='"'){ if(text[i+1]==='"'){ cur+='"'; i++; } else { inQ=false; } } else cur+=c; }
+      else { if(c==='"') inQ=true; else if(c===','){ push(); } else if(c==='\n' || c==='\r'){ if(c==='\r' && text[i+1]==='\n') i++; push(); rows.push(row); row=[]; } else cur+=c; }
     }
     if(cur!==''||row.length) { push(); rows.push(row); }
     return rows.filter(r=> r.some(c=> (c||'').trim()!==''));
   }
-
   function importCSV(file){
     const reader = new FileReader();
     reader.onload = ()=>{
@@ -652,7 +603,7 @@
       for(let r=1; r<rows.length; r++){
         const row = rows[r]; if(!row || row.length===0) continue;
         const id = row[iID]||uuid();
-        const name = row[iN]||''; if(!name) continue; // requiere nombre
+        const name = row[iN]||''; if(!name) continue;
         const phone = row[iT]||'';
         const start = row[iI]||todayISO();
         const day = clamp(parseInt(row[iD]||'1',10)||1,1,21);
@@ -661,42 +612,59 @@
         const st = (row[iS]||'Activa');
         const notes = row[iNo]||'';
         const prog = [];
-        const progTxt = row[iP]||''; // formato "dia:valor|dia:valor"
-        progTxt.split('|').forEach(pair=>{
-          const [d,v] = pair.split(':');
-          const dd = parseInt(d,10); if(!dd) return;
-          const vn = v!==undefined && v!==''? Number(v): null;
-          prog.push({day: clamp(dd,1,21), weight: vn, date: todayISO()});
-        });
+        const progTxt = row[iP]||''; // "dia:valor|dia:valor"
+        progTxt.split('|').forEach(pair=>{ const [d,v] = pair.split(':'); const dd = parseInt(d,10); if(!dd) return; const vn = v!==undefined && v!==''? Number(v): null; prog.push({day: clamp(dd,1,21), weight: vn, date: todayISO()}); });
         const asis = (row[iA]||'').split('').map(c=> c==='1');
         const attendance = Array.from({length:21}, (_,i)=> asis[i]||false);
         out.push({id, name, phone, startDate:start, day, weightStart:w0, weightCurrent:w, status:st, notes, progress:prog, attendance, lastUpdate:new Date().toISOString()});
       }
-      if(!out.length){ alert('No se encontraron filas válidas. Asegura que el CSV incluya encabezados y al menos 1 fila.'); return; }
-      // fusionar por id (si existe) o por nombre+tel
-      out.forEach(nv=>{
-        const i = data.participants.findIndex(p=> p.id===nv.id || (p.name===nv.name && p.phone===nv.phone));
-        if(i>-1) data.participants[i]=nv; else data.participants.push(nv);
-      });
+      if(!out.length){ alert('No se encontraron filas válidas.'); return; }
+      out.forEach(nv=>{ const i = data.participants.findIndex(p=> p.id===nv.id || (p.name===nv.name && p.phone===nv.phone)); if(i>-1) data.participants[i]=nv; else data.participants.push(nv); });
       scheduleSave();
       alert('Importación completada: '+out.length+' registro(s).');
     };
     reader.readAsText(file);
   }
-
   function norm(s){ return (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'').toLowerCase(); }
-
   function templateCSV(){
     const headers = ['ID','Nombre','Telefono','Inicio','Dia','PesoInicial','PesoActual','Estado','Notas','Progreso','Asistencias'];
     const sample = ['p_abc123','María Pérez','9611234567', todayISO(), '3','72.5','71.8','Activa','Sin gluten','1:72.5|2:72.1|3:71.8','111000000000000000000'];
     downloadFile('plantilla_nutri_less.csv', [headers.join(','), sample.map(csvEsc).join(',')].join('\n'));
   }
+  function downloadFile(filename, text){ const blob = new Blob([text], {type:'text/plain;charset=utf-8;'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download=filename; a.click(); setTimeout(()=> URL.revokeObjectURL(url), 5000); }
 
-  function downloadFile(filename, text){
-    const blob = new Blob([text], {type:'text/csv;charset=utf-8;'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href=url; a.download=filename; a.click();
-    setTimeout(()=> URL.revokeObjectURL(url), 5000);
+  // Archivo de trabajo (JSON) ----
+  async function loadWork(){
+    try{
+      if(!('showOpenFilePicker' in window)) throw new Error('Este navegador no permite abrir archivos directamente.');
+      const [handle] = await window.showOpenFilePicker({ types:[{ description:'Nutri Less Workbook', accept:{ 'application/json':['.json'] } }] });
+      const file = await handle.getFile(); const text = await file.text(); const obj = JSON.parse(text);
+      if(!obj || typeof obj!=='object' || !obj.months) throw new Error('Archivo no válido');
+      book = obj; ensureMonth(book.current||monthName()); data = book.months[book.current]; fileHandle = handle; localStorage.setItem(STORE_KEY, JSON.stringify(book));
+      $('#monthBadge').textContent = book.current; fillMonthSelect(); render(); alert('Archivo de trabajo cargado.');
+    }catch(e){ console.warn(e); if(confirm('No se pudo abrir directo. ¿Cargar desde un JSON exportado?')){
+        const inp = document.createElement('input'); inp.type='file'; inp.accept='.json,application/json';
+        inp.onchange = async (ev)=>{ const f=ev.target.files?.[0]; if(!f) return; const t = await f.text(); try{ const obj=JSON.parse(t); if(obj && obj.months){ book=obj; ensureMonth(book.current||monthName()); data=book.months[book.current]; localStorage.setItem(STORE_KEY, JSON.stringify(book)); $('#monthBadge').textContent=book.current; fillMonthSelect(); render(); alert('Cargado.'); } else alert('JSON inválido.'); }catch(err){ alert('JSON inválido.'); } };
+        inp.click();
+      }
+    }
+  }
+
+  async function saveWork(){
+    try{
+      const json = JSON.stringify(book, null, 2);
+      if('showSaveFilePicker' in window){
+        if(fileHandle){
+          const writable = await fileHandle.createWritable(); await writable.write(json); await writable.close(); alert('Guardado en el mismo archivo.');
+        } else {
+          fileHandle = await window.showSaveFilePicker({ suggestedName:'nutri_less_workbook.json', types:[{ description:'Nutri Less Workbook', accept:{ 'application/json':['.json'] } }] });
+          const writable = await fileHandle.createWritable(); await writable.write(json); await writable.close(); alert('Guardado.');
+        }
+      } else {
+        downloadFile('nutri_less_workbook.json', json);
+        alert('Descargado (no soporta guardar directo).');
+      }
+    }catch(e){ console.error(e); alert('No fue posible guardar el archivo.'); }
   }
 
   // UI eventos ---------------
@@ -720,53 +688,51 @@
     dlg.showModal();
   }
 
-  // Borrar todo
-  function clearAll(){
-    if(!confirm('Esto eliminará todos los datos guardados en este navegador. ¿Continuar?')) return;
-    localStorage.removeItem(STORE_KEY);
-    data={participants:[]}; render();
-    markSaving();
+  function clearMonth(){
+  try{
+    const current = (book && book.current) ? book.current : '(sin mes)';
+    const msg = 'Esto eliminará todos los datos del mes activo ("' + current + '"). ¿Continuar?';
+    if(!confirm(msg)) return;
+    if(!book || !book.months) return;
+    clearTimeout(saveTimer); saveTimer = null;
+    book.months[book.current] = { participants: [] };
+    data = book.months[book.current];
+    localStorage.setItem(STORE_KEY, JSON.stringify(book));
+    render();
+    markSaving('saved');
+  }catch(e){
+    console.error('clearMonth error', e);
+    alert('No se pudo limpiar el mes. Revisa la consola.');
   }
+}
 
-  // Listeners
-  $('#btnAdd').addEventListener('click', ()=> openForm());
+$('#btnAdd').addEventListener('click', ()=> openForm());
   $('#fabAdd').addEventListener('click', ()=> openForm());
   $('#btnSave').addEventListener('click', (e)=>{ e.preventDefault(); addOrUpdate(); });
   $('#btnProgSave').addEventListener('click', (e)=>{ e.preventDefault(); saveProgress(); });
   $('#btnExport').addEventListener('click', exportCSV);
   $('#btnTemplate').addEventListener('click', templateCSV);
   $('#btnShareAll').addEventListener('click', shareSummary);
-  $('#btnClear').addEventListener('click', clearAll);
+  $('#btnClear').addEventListener('click', clearMonth);
+  $('#csvInput').addEventListener('change', (e)=>{ const file = e.target.files?.[0]; if(file) importCSV(file); e.target.value=''; });
 
-  $('#csvInput').addEventListener('change', (e)=>{
-    const file = e.target.files?.[0]; if(file) importCSV(file);
-    e.target.value=''; // reset
+  $('#monthSelect').addEventListener('change', (e)=>{ switchMonth(e.target.value); });
+  $('#btnNewMonth').addEventListener('click', ()=>{
+    const def = monthName();
+    const name = prompt('Nombre del nuevo mes/hoja:', def);
+    if(!name) return;
+    ensureMonth(name); switchMonth(name);
   });
 
-  ['search','statusFilter','dayFilter'].forEach(id=> document.getElementById(id).addEventListener('input', render));
+  $('#btnLoadWork').addEventListener('click', loadWork);
+  $('#btnSaveWork').addEventListener('click', saveWork);
+$('#search').addEventListener('input', render);
+$('#statusFilter').addEventListener('change', render);
+$('#dayFilter').addEventListener('change', render);
 
   // Init
   load();
 
-  // Semillas (opcional): descomenta para ejemplos iniciales
-  // if(!data.participants.length){
-  //   data.participants.push({id:uuid(), name:'Ana López', phone:'9611112233', startDate:todayISO(), day:3, weightStart:70.0, weightCurrent:69.2, status:'Activa', notes:'Objetivo: -4kg', progress:[{day:1,weight:70,date:todayISO()},{day:2,weight:69.6,date:todayISO()},{day:3,weight:69.2,date:todayISO()}], attendance:[true,true,true,...Array(18).fill(false)], lastUpdate:new Date().toISOString()});
-  //   scheduleSave();
-  // }
-
   </script>
-
-<script>
-(function(){
-  var key='NL_RETO_MES';
-  var el=document.getElementById('retoMes');
-  if(!el) return;
-  try{ el.value = localStorage.getItem(key)||''; }catch(e){}
-  el.addEventListener('input', function(){
-    try{ localStorage.setItem(key, (el.value||'').trim()); }catch(e){}
-  });
-})();
-</script>
-
 </body>
 </html>
